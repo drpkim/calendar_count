@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import date
 import datetime
 
+df = pd.DataFrame()
 st.markdown("# Let's Count Dates from Days!")
 st.write ("The following will give you dates based on defined alloted date intervals")
 
@@ -39,9 +40,25 @@ with st.form(key='find_date_form'):
                     df['Start Date'] = pd.to_datetime(df['Start Date'], format='%Y-%m-%d').dt.strftime('%m/%d/%Y')
                     df['End Date'] = pd.to_datetime(df['End Date'], format='%Y-%m-%d').dt.strftime('%m/%d/%Y')
                     st.table(df)
+                    
                     break
 
         else:
             st.error ('Invalid Input, Try Again')
+
+if not df.empty: 
+    @st.cache
+    def convert_df(df):
+        # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        return df.to_csv().encode('utf-8')
+
+    csv = convert_df(df)
+
+    st.download_button(
+        label="Download data as CSV",
+        data=csv,
+        file_name='calendar_table.csv',
+        mime='text/csv',
+    )
 
 
