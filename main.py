@@ -7,11 +7,15 @@ df = pd.DataFrame()
 st.markdown("# Let's Count Dates from Days!")
 st.write ("The following will give you dates based on defined alloted date intervals")
 
+if "submitted" not in st.session_state:
+    st.session_state.submitted = False
+    
+
 #create a form to avoid rerun based on changes in user input 
 
 with st.form(key='find_date_form'):
-    begin_date = st.date_input ("Pick a beginning date", date.today())
-    end_date = st.date_input("Pick a end date", date.today())
+    begin_date = st.date_input ("Pick a beginning date", date.today(), key='begin_date')
+    end_date = st.date_input("Pick a end date", date.today(), key='end_date')
     
     print (begin_date)
     print (end_date)
@@ -21,9 +25,11 @@ with st.form(key='find_date_form'):
     delta_less = datetime.timedelta(days=interval_date-1)
 
     submit = st.form_submit_button("Submit")
-
-    if submit:
+    
+    if submit or st.session_state.submitted:
+        
         if begin_date < end_date and interval_date > 0:
+            st.session_state.submitted = True
             start_count = begin_date
             column_a = []
             column_b = []
@@ -39,7 +45,7 @@ with st.form(key='find_date_form'):
                     df.index += 1
                     df['Start Date'] = pd.to_datetime(df['Start Date'], format='%Y-%m-%d').dt.strftime('%m/%d/%Y')
                     df['End Date'] = pd.to_datetime(df['End Date'], format='%Y-%m-%d').dt.strftime('%m/%d/%Y')
-                    st.table(df)
+                    #st.table(df)
                     
                     break
 
@@ -50,15 +56,21 @@ if not df.empty:
     @st.cache
     def convert_df(df):
         # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        
         return df.to_csv().encode('utf-8')
 
     csv = convert_df(df)
+    st.table(df)
+    st.session_state.submitted = True
 
-    st.download_button(
-        label="Download data as CSV",
-        data=csv,
+    st.download_button(label="Download data as CSV", data=csv,
         file_name='calendar_table.csv',
-        mime='text/csv',
-    )
+        mime='text/csv', )
+
+    
+    
+
+
+    
 
 
