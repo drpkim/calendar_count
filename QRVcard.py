@@ -1,6 +1,7 @@
 import streamlit as st
 import re 
 from segno import helpers
+import segno
 import io
 
 #create a session state for form validation
