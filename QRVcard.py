@@ -1,16 +1,11 @@
 import streamlit as st
 import re 
-# import segno
 from segno import helpers
-from PIL import Image
-# from PIL import ImageDraw
-# from PIL import ImageFont
 import io
 
-#create a session state for QR image to remain upon download
+#create a session state for form validation
 if "submitted" not in st.session_state:
     st.session_state['submitted'] = False
-
 #Regex to catch validation errors
 phone_format = r"^[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4}$"
 zip_format = "^[0-9]{5}(?:-[0-9]{4})?$"
@@ -67,8 +62,6 @@ def vcardmake (first=None, last= None, displayname=None, degree=None, title=None
     #myfont = ImageFont.truetype("/System/Library/Fonts/Geneva.ttf", 12)
     #img_width, img_height = img.size
     #d1.text((img_width//2, 180), displayname, anchor='ms')
-    
-    #img.save(f"/Users/pkimmd/Documents/GitHub/qrvcard/QR_images/{displayname}.png")
     return out
 
 
@@ -213,12 +206,8 @@ with st.form('contact_info'):
         submit = st.form_submit_button("Create VCard", on_click=check_valid)
     
 
-    #execute code
+    #execute QR generate code
     if st.session_state.submitted and submit:
-        # st.write('valid')
-        # st.write(first_name, last_name, ", ".join(degree))
-        # st.write(title, org)
-        st.session_state.submitted = True
         displayname = str()
         if degree:
             displayname = (" ").join([first_name.strip(), last_name.strip()]).title() + " " + ", ".join(degree)
@@ -230,7 +219,7 @@ with st.form('contact_info'):
         with col2:
             global qrcard
             qrcard = vcardmake(first=first_name.strip(), last=last_name.strip(), degree=degree, displayname=displayname, email=email, title=title.title(), org=org, phone=personal_cell, workphone=work_phone, fax=work_fax, street=business_add, city=city, region=state, zipcode=zip_code, url=website)
-        
+
             st.image(qrcard, use_column_width='auto', output_format='PNG')
             
 
@@ -252,22 +241,17 @@ def clear_fields():
                 'Fax']
     for s in set_keys:
         st.session_state[s] = ''
-        
-             
-
+                
 try:
-    d1, d2, d3 = st.columns(3)
-    with d1:
-        st.download_button('Download Image', data=qrcard.read(), file_name=f'qr_card_{last_name.strip()}.png')
-        
+    d1, d2, d3, d4 = st.columns(4)
     with d2:
-        st.button("Clear", on_click=clear_fields, key='Clear')        
+        st.download_button('Download Image', data=qrcard.read(), file_name=f'qr_card_{last_name.strip()}.png')
+    with d3:
+        st.button("Clear Fields", on_click=clear_fields, key='Clear')        
 except NameError:
     print('Name ERROR on Global')
 
 
-
 ##Sample Write output          
-# st.write (st.session_state["First"])
-for item in st.session_state.items():
-    st.write(item)
+# for item in st.session_state.items():
+#     st.write(item)
