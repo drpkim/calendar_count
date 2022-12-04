@@ -1,12 +1,11 @@
 import streamlit as st
 import re 
-import segno
+# import segno
 from segno import helpers
 from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+# from PIL import ImageDraw
+# from PIL import ImageFont
 import io
-import base64
 
 #create a session state for QR image to remain upon download
 if "submitted" not in st.session_state:
@@ -32,14 +31,18 @@ st.write('This will produce a QR code in VCard format')
 profession_degree = ["DO", "MPH", "MD", "PhD"]
 
 #create QR Function formation
-def vcardmake (displayname, title=None, org=None, email=None, phone=None, workphone=None, fax=None, street=None, city=None, region=None, zipcode=None, url=None):
-    n  = displayname.split(' ')
-    n.append(';')
-    n.insert(2, ' ')
-    n.insert(4, ' ')
-    name = ''.join(n[1:]) + n[0]
+def vcardmake (first=None, last= None, displayname=None, degree=None, title=None, org=None, email=None, phone=None, workphone=None, fax=None, street=None, city=None, region=None, zipcode=None, url=None):
+    # n  = displayname.split(' ')
+    # n.append(';')
+    # n.insert(2, ' ')
+    # n.insert(4, ' ')
+    # name = ''.join(n[1:]) + n[0]
     # use a bitmap font
     #font = ImageFont.truetype("arial.ttf", 12)
+    if degree:
+        name = last.title() + " " + ", ".join(degree) + ";" + first.title()     
+    else:
+        name = last.title() + ";" + first.title()
     vcard = helpers.make_vcard(
         name=name,
         displayname=displayname,
@@ -59,14 +62,13 @@ def vcardmake (displayname, title=None, org=None, email=None, phone=None, workph
     vcard.save(out, scale=3, border=10, kind='png') #save to buffer
     out.seek(0)
     
-    img = Image.open(out)
+    #img = Image.open(out)
     #d1 = ImageDraw.Draw(img)
     #myfont = ImageFont.truetype("/System/Library/Fonts/Geneva.ttf", 12)
     #img_width, img_height = img.size
     #d1.text((img_width//2, 180), displayname, anchor='ms')
     
     #img.save(f"/Users/pkimmd/Documents/GitHub/qrvcard/QR_images/{displayname}.png")
-    
     return out
 
 
@@ -74,7 +76,7 @@ def vcardmake (displayname, title=None, org=None, email=None, phone=None, workph
 def check_valid():
     st.session_state.submitted = True
    
-    for k, v in st.session_state.items():
+    for k in st.session_state.keys():
         if k == 'Address':
             if st.session_state[k]:
                 if not st.session_state['City']:
@@ -135,7 +137,7 @@ def check_valid():
                     st.session_state.submitted = False
                     st.error(f"Missing Address values: Address")
                 break
-    for k, v in st.session_state.items():
+    for k in st.session_state.keys():
         if k == 'Cell':
             if st.session_state[k]:
                 if not re.match(phone_format, st.session_state[k]):
@@ -157,14 +159,14 @@ def check_valid():
         st.error(f"Missing Required Value: First")
     elif not re.match(r'^[a-zA-Z\s]+$', st.session_state['First'].strip()):
         st.session_state.submitted = False
-        st.error(f"No numerics allowed: First")
+        st.error(f"No numerics or special characters allowed: First")
         
     if not st.session_state['Last']:
         st.session_state.submitted = False
         st.error(f"Missing Required Value: Last")
     elif not re.match(r'^[a-zA-Z\s]+$', st.session_state['Last'].strip()):
         st.session_state.submitted = False
-        st.error(f"No numerics allowed: Last")        
+        st.error(f"No numerics or special characters allowed: Last")        
             
     if not st.session_state['Email']:
         st.session_state.submitted = False
@@ -209,32 +211,63 @@ with st.form('contact_info'):
     s1, s2, s3 = st.columns([4, 2, 4])
     with s2:
         submit = st.form_submit_button("Create VCard", on_click=check_valid)
+    
 
     #execute code
     if st.session_state.submitted and submit:
         # st.write('valid')
         # st.write(first_name, last_name, ", ".join(degree))
         # st.write(title, org)
+        st.session_state.submitted = True
         displayname = str()
         if degree:
-            displayname = (" ").join([first_name, last_name]).title() + " " + ", ".join(degree)
+            displayname = (" ").join([first_name.strip(), last_name.strip()]).title() + " " + ", ".join(degree)
             print (displayname)
         else:
-            displayname = (' ').join([first_name, last_name]).title()
+            displayname = (' ').join([first_name.strip(), last_name.strip()]).title()
         #execute QR maker function
         col1, col2, col3 = st.columns([4, 4, 4])
         with col2:
             global qrcard
-            qrcard = vcardmake(displayname=displayname, email=email, title=title.title(), org=org, phone=personal_cell, workphone=work_phone, fax=work_fax, street=business_add, city=city, region=state, zipcode=zip_code, url=website)
+            qrcard = vcardmake(first=first_name.strip(), last=last_name.strip(), degree=degree, displayname=displayname, email=email, title=title.title(), org=org, phone=personal_cell, workphone=work_phone, fax=work_fax, street=business_add, city=city, region=state, zipcode=zip_code, url=website)
         
             st.image(qrcard, use_column_width='auto', output_format='PNG')
-if st.session_state.submitted:
-        try:
-            st.download_button('Download Image', data=qrcard.read(), file_name=f'qr_card_{last_name}.png')
-        except NameError:
-            print('Name ERROR on Global')
+            
+
+#Clear the values in all keys:
+def clear_fields():
+    st.session_state['Degree'] = []
+    set_keys = ['Website',
+                'Title',
+                'Zip',
+                'Last',
+                'State',
+                'First',
+                'Address',
+                'Cell',
+                'Email',
+                'Organization',
+                'Work',
+                'City',
+                'Fax']
+    for s in set_keys:
+        st.session_state[s] = ''
+        
+             
+
+try:
+    d1, d2, d3 = st.columns(3)
+    with d1:
+        st.download_button('Download Image', data=qrcard.read(), file_name=f'qr_card_{last_name.strip()}.png')
+        
+    with d2:
+        st.button("Clear", on_click=clear_fields, key='Clear')        
+except NameError:
+    print('Name ERROR on Global')
+
+
 
 ##Sample Write output          
 # st.write (st.session_state["First"])
-# for item in st.session_state.items():
-#     st.write(item)
+for item in st.session_state.items():
+    st.write(item)
