@@ -6,6 +6,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 import io
+import base64
 
 #create a session state for QR image to remain upon download
 if "submitted" not in st.session_state:
@@ -31,19 +32,20 @@ st.write('This will produce a QR code in VCard format')
 profession_degree = ["DO", "MPH", "MD", "PhD"]
 
 #create QR Function formation
-def vcardmake (displayname, email=None, title=None, org=None, phone=None, workphone=None, fax=None, street=None, city=None, region=None, zipcode=None, url=None):
+def vcardmake (displayname, title=None, org=None, email=None, phone=None, workphone=None, fax=None, street=None, city=None, region=None, zipcode=None, url=None):
     n  = displayname.split(' ')
     n.append(';')
     n.insert(2, ' ')
+    n.insert(4, ' ')
     name = ''.join(n[1:]) + n[0]
     # use a bitmap font
     #font = ImageFont.truetype("arial.ttf", 12)
     vcard = helpers.make_vcard(
         name=name,
         displayname=displayname,
-        email=email,
         title=title,
         org=org,
+        email=email,
         phone=phone,
         workphone=workphone,
         fax=fax,
@@ -54,7 +56,7 @@ def vcardmake (displayname, email=None, title=None, org=None, phone=None, workph
         url=url
     )
     out = io.BytesIO()
-    vcard.save(out, scale=2, border=20, kind='png') #save to buffer
+    vcard.save(out, scale=3, border=10, kind='png') #save to buffer
     out.seek(0)
     
     img = Image.open(out)
@@ -64,7 +66,8 @@ def vcardmake (displayname, email=None, title=None, org=None, phone=None, workph
     #d1.text((img_width//2, 180), displayname, anchor='ms')
     
     #img.save(f"/Users/pkimmd/Documents/GitHub/qrvcard/QR_images/{displayname}.png")
-    return st.image(img, use_column_width='auto')
+    
+    return out
 
 
 ##################################################
@@ -203,22 +206,35 @@ with st.form('contact_info'):
 
     email = st.text_input("Email*", key='Email')
     website = st.text_input("Website", key='Website')
-    submit = st.form_submit_button("Create VCard", on_click=check_valid)
+    s1, s2, s3 = st.columns([4, 2, 4])
+    with s2:
+        submit = st.form_submit_button("Create VCard", on_click=check_valid)
 
     #execute code
     if st.session_state.submitted and submit:
-        st.write('valid')
-        st.write(first_name, last_name, ", ".join(degree))
-        st.write(title, org )
+        # st.write('valid')
+        # st.write(first_name, last_name, ", ".join(degree))
+        # st.write(title, org)
         displayname = str()
         if degree:
-            displayname = first_name + last_name + ' ,' + degree
+            displayname = (" ").join([first_name, last_name]).title() + " " + ", ".join(degree)
+            print (displayname)
         else:
-            displayname = (' ').join([first_name, last_name])
+            displayname = (' ').join([first_name, last_name]).title()
+        #execute QR maker function
+        col1, col2, col3 = st.columns([4, 4, 4])
+        with col2:
+            global qrcard
+            qrcard = vcardmake(displayname=displayname, email=email, title=title.title(), org=org, phone=personal_cell, workphone=work_phone, fax=work_fax, street=business_add, city=city, region=state, zipcode=zip_code, url=website)
         
-        vcardmake(displayname=displayname, email=email, title=title, org=org, phone=personal_cell, workphone=work_phone, fax=work_fax, street=business_add, city=city, region=state, zipcode=zip_code, url=website)
+            st.image(qrcard, use_column_width='auto', output_format='PNG')
+if st.session_state.submitted:
+        try:
+            st.download_button('Download Image', data=qrcard.read(), file_name=f'qr_card_{last_name}.png')
+        except NameError:
+            print('Name ERROR on Global')
 
 ##Sample Write output          
-st.write (st.session_state["First"])
-for item in st.session_state.items():
-    st.write(item)
+# st.write (st.session_state["First"])
+# for item in st.session_state.items():
+#     st.write(item)
